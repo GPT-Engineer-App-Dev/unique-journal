@@ -1,13 +1,34 @@
-import { Box, Container, Flex, Heading, Link, Text, VStack, HStack, Spacer, IconButton, Button, useColorMode, useColorModeValue } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { Box, Container, Flex, Heading, Link, Text, VStack, HStack, Spacer, IconButton, Button, useColorMode, useColorModeValue, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay } from "@chakra-ui/react";
+import { useEffect, useState, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { FaTwitter, FaFacebook, FaInstagram, FaSun, FaMoon } from "react-icons/fa";
+import { FaTwitter, FaFacebook, FaInstagram, FaSun, FaMoon, FaTrash } from "react-icons/fa";
 
 const Index = () => {
   const [posts, setPosts] = useState([]);
   const { colorMode, toggleColorMode } = useColorMode();
   const bg = useColorModeValue("white", "gray.800");
   const color = useColorModeValue("black", "white");
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const cancelRef = useRef();
+
+  const openDeleteDialog = (post) => {
+    setPostToDelete(post);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setPostToDelete(null);
+    setIsDeleteDialogOpen(false);
+  };
+
+  const deletePost = () => {
+    const updatedPosts = posts.filter((post) => post !== postToDelete);
+    localStorage.setItem("posts", JSON.stringify(updatedPosts));
+    setPosts(updatedPosts);
+    closeDeleteDialog();
+  };
 
   useEffect(() => {
     const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
@@ -46,7 +67,15 @@ const Index = () => {
             <VStack spacing={8} align="stretch">
               {posts.map((post, index) => (
                 <Box key={index} p={5} shadow="md" borderWidth="1px" bg={useColorModeValue("gray.100", "gray.700")}>
-                  <Heading fontSize="xl">{post.title}</Heading>
+                  <Flex justify="space-between" align="center">
+                    <Heading fontSize="xl">{post.title}</Heading>
+                    <IconButton
+                      aria-label="Delete post"
+                      icon={<FaTrash />}
+                      colorScheme="red"
+                      onClick={() => openDeleteDialog(post)}
+                    />
+                  </Flex>
                   <Text mt={4}>{post.content}</Text>
                   <Text mt={2} fontSize="sm" color="gray.500">Tags: {post.tags.join(", ")}</Text>
                 </Box>
@@ -78,6 +107,32 @@ const Index = () => {
           </Flex>
         </Container>
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteDialogOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={closeDeleteDialog}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Post
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={closeDeleteDialog}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={deletePost} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 };
